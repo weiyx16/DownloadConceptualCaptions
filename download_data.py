@@ -45,9 +45,10 @@ def df_multiprocess(df, processes, chunk_size, func, dataset_name):
 
 # Unique name based on url
 def _file_name(row):
-    return "%s/%s_%s" % (row['folder'], row.name, (zlib.crc32(row['url'].encode('utf-8')) & 0xffffffff))
+    return "%s/%s" % (row['folder'], row['img_idx'])
+    #return "%s/%s_%s" % (row['folder'], row.name, (zlib.crc32(row['url'].encode('utf-8')) & 0xffffffff))
 
-# For checking mimetypes separately without download
+# For cqhecking mimetypes separately without download
 def check_mimetype(row):
     if os.path.isfile(str(row['file'])):
         row['mimetype'] = magic.from_file(row['file'], mime=True)
@@ -108,7 +109,7 @@ def download_image(row):
 
 def open_tsv(fname, folder):
     print("Opening %s Data File..." % fname)
-    df = pd.read_csv(fname, sep='\t', names=["caption","url"], usecols=range(1,2))
+    df = pd.read_csv(fname, sep='\t', names=['img_idx','url','caption'], usecols=range(0,2))
     df['folder'] = folder
     print("Processing", len(df), " Images:")
     return df
@@ -121,20 +122,21 @@ def df_from_shelve(chunk_size, func, dataset_name):
     return df
 
 # number of processes in the pool can be larger than cores
-num_processes = 32
+num_processes = 4
 # chunk_size is how many images per chunk per process - changing this resets progress when restarting.
 images_per_part = 100
 
-data_name = "validation"
-df = open_tsv("Validation_GCC-1.1.0-Validation.tsv", data_name)
-df_multiprocess(df=df, processes=num_processes, chunk_size=images_per_part, func=download_image, dataset_name=data_name)
-df = df_from_shelve(chunk_size=images_per_part, func=download_image, dataset_name=data_name)
-df.to_csv("downloaded_%s_report.tsv.gz" % data_name, compression='gzip', sep='\t', header=False, index=False)
-print("Saved.")
+#data_name = "validation"
+#df = open_tsv("Validation_GCC-1.1.0-Validation.tsv", data_name)
+#df_multiprocess(df=df, processes=num_processes, chunk_size=images_per_part, func=download_image, dataset_name=data_name)
+#df = df_from_shelve(chunk_size=images_per_part, func=download_image, dataset_name=data_name)
+#df.to_csv("downloaded_%s_report.tsv.gz" % data_name, compression='gzip', sep='\t', header=False, index=False)
+#print("Saved.")
 
 data_name = "training"
-df = open_tsv("Train_GCC-training.tsv",data_name)
-df_multiprocess(df=df, processes=num_processes, chunk_size=images_per_part, func=download_image, dataset_name=data_name)
-df = df_from_shelve(chunk_size=images_per_part, func=download_image, dataset_name=data_name)
+df = open_tsv("../cc12_split_test.tsv",data_name)
+func = download_image #check_download #download_image
+df_multiprocess(df=df, processes=num_processes, chunk_size=images_per_part, func=func, dataset_name=data_name)
+df = df_from_shelve(chunk_size=images_per_part, func=func, dataset_name=data_name)
 df.to_csv("downloaded_%s_report.tsv.gz" % data_name, compression='gzip', sep='\t', header=False, index=False)
 print("Saved.")
